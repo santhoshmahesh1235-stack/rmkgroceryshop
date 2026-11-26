@@ -4,6 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>RMK Grocery | Online Grocery Store</title>
 
 <style>
@@ -275,16 +276,46 @@ header {
     font-weight: bold;
 }
 
+.customer-form {
+    margin-top: 25px;
+}
+
+.customer-form h2 {
+    color: #167a45;
+    margin-bottom: 15px;
+}
+
+.customer-form input,
+.customer-form textarea {
+    width: 100%;
+    padding: 14px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+}
+
+.customer-form textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
 .checkout-button {
     display: block;
     margin: 20px 0 0 auto;
-    background: #167a45;
+    background: #25D366;
     color: white;
     border: none;
     padding: 14px 25px;
     border-radius: 6px;
     font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
+}
+
+.checkout-button:hover {
+    background: #1da851;
 }
 
 .empty-cart {
@@ -397,19 +428,56 @@ footer {
         Total: ₹<span id="cart-total">0</span>
     </div>
 
-    <button class="checkout-button" onclick="checkout()">
-        Proceed to Checkout
-    </button>
+    <div class="customer-form">
+        <h2>Delivery Details</h2>
+
+        <input
+            type="text"
+            id="customer-name"
+            placeholder="Your full name"
+            autocomplete="name"
+            required
+        >
+
+        <input
+            type="tel"
+            id="customer-phone"
+            placeholder="Your phone number"
+            autocomplete="tel"
+            required
+        >
+
+        <textarea
+            id="customer-address"
+            placeholder="Your complete delivery address"
+            autocomplete="street-address"
+            required
+        ></textarea>
+
+        <textarea
+            id="customer-note"
+            placeholder="Additional instructions (optional)"
+        ></textarea>
+
+        <button class="checkout-button" onclick="checkout()">
+            Order Through WhatsApp
+        </button>
+    </div>
 </section>
 
 <footer>
     <h2>RMK Grocery</h2>
     <p>Your trusted online grocery store</p>
     <p>Fresh products | Best prices | Easy shopping</p>
+    <p>WhatsApp Orders: 8220624419</p>
     <p>© 2026 RMK Grocery. College Project.</p>
 </footer>
 
 <script>
+
+// WhatsApp number with India country code
+const whatsappNumber = "918220624419";
+
 const products = [
     {
         id: 1,
@@ -552,7 +620,8 @@ const products = [
         category: "Snacks",
         price: 40,
         unit: "1 bar",
-        image: "https://images.unsplash.com/photo-1548907040-4d42f3c8c4f3?w=500,"
+        image: "https://images.unsplash.com/photo-1548907040-4d42f3c8c4f3?w=500",
+        description: "Delicious chocolate bar"
     },
     {
         id: 17,
@@ -631,6 +700,7 @@ const products = [
 let cart = [];
 let selectedCategory = "All";
 
+// Display categories
 function displayCategories() {
     const categoriesDiv = document.getElementById("categories");
 
@@ -649,6 +719,7 @@ function displayCategories() {
     `).join("");
 }
 
+// Display products
 function displayProducts(productList = products) {
     const productsDiv = document.getElementById("products");
 
@@ -662,7 +733,7 @@ function displayProducts(productList = products) {
             <img
                 src="${product.image}"
                 alt="${product.name}"
-                onerror="this.src='https://placehold.co/500x300?text=RMK+Grocery'"
+                onerror="this.onerror=null;this.src='https://placehold.co/500x300?text=RMK+Grocery'"
             >
 
             <div class="product-info">
@@ -685,17 +756,15 @@ function displayProducts(productList = products) {
     `).join("");
 }
 
+// Filter by category
 function filterCategory(category) {
     selectedCategory = category;
     displayCategories();
 
-    const filteredProducts = category === "All"
-        ? products
-        : products.filter(product => product.category === category);
-
-    displayProducts(filteredProducts);
+    searchProducts();
 }
 
+// Search products
 function searchProducts() {
     const searchText = document
         .getElementById("search-input")
@@ -703,19 +772,26 @@ function searchProducts() {
         .toLowerCase();
 
     const filteredProducts = products.filter(product => {
-        const matchesName = product.name.toLowerCase().includes(searchText);
-        const matchesCategory = product.category.toLowerCase().includes(searchText);
+        const matchesName =
+            product.name.toLowerCase().includes(searchText);
+
+        const matchesCategory =
+            product.category.toLowerCase().includes(searchText);
 
         const matchesSelectedCategory =
             selectedCategory === "All" ||
             product.category === selectedCategory;
 
-        return (matchesName || matchesCategory) && matchesSelectedCategory;
+        return (
+            (matchesName || matchesCategory) &&
+            matchesSelectedCategory
+        );
     });
 
     displayProducts(filteredProducts);
 }
 
+// Add product to cart
 function addToCart(productId) {
     const product = products.find(item => item.id === productId);
 
@@ -733,6 +809,7 @@ function addToCart(productId) {
     displayCart();
 }
 
+// Increase quantity
 function increaseQuantity(productId) {
     const item = cart.find(item => item.id === productId);
 
@@ -743,6 +820,7 @@ function increaseQuantity(productId) {
     displayCart();
 }
 
+// Decrease quantity
 function decreaseQuantity(productId) {
     const item = cart.find(item => item.id === productId);
 
@@ -757,11 +835,13 @@ function decreaseQuantity(productId) {
     displayCart();
 }
 
+// Remove product
 function removeFromCart(productId) {
     cart = cart.filter(item => item.id !== productId);
     displayCart();
 }
 
+// Display cart
 function displayCart() {
     const cartItemsDiv = document.getElementById("cart-items");
     const cartCount = document.getElementById("cart-count");
@@ -811,42 +891,106 @@ function displayCart() {
     `).join("");
 }
 
+// WhatsApp checkout
 function checkout() {
+
+    // Check cart
     if (cart.length === 0) {
         alert("Your shopping cart is empty!");
         return;
     }
 
+    // Get customer details
+    const customerName = document
+        .getElementById("customer-name")
+        .value.trim();
+
+    const customerPhone = document
+        .getElementById("customer-phone")
+        .value.trim();
+
+    const customerAddress = document
+        .getElementById("customer-address")
+        .value.trim();
+
+    const customerNote = document
+        .getElementById("customer-note")
+        .value.trim();
+
+    // Validate details
+    if (!customerName || !customerPhone || !customerAddress) {
+        alert("Please enter your name, phone number and delivery address.");
+        return;
+    }
+
+    // Calculate total
     const totalPrice = cart.reduce(
         (total, item) => total + item.price * item.quantity,
         0
     );
 
-    alert(
-        "Thank you for shopping at RMK Grocery!\n\n" +
-        "Your order total is ₹" + totalPrice +
-        "\n\nThis is a college project demo. No real order or payment was made."
-    );
+    // Prepare WhatsApp message
+    let message = "🛒 *NEW ORDER - RMK GROCERY*\n\n";
 
-    cart = [];
-    displayCart();
+    message += "*Customer Details*\n";
+    message += "Name: " + customerName + "\n";
+    message += "Phone: " + customerPhone + "\n";
+    message += "Address: " + customerAddress + "\n\n";
+
+    message += "*Order Items*\n";
+
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+
+        message +=
+            item.name +
+            " (" + item.unit + ")" +
+            " x " + item.quantity +
+            " = ₹" + itemTotal +
+            "\n";
+    });
+
+    message += "\n*Total Amount: ₹" + totalPrice + "*";
+
+    if (customerNote) {
+        message += "\n\nAdditional Instructions: " + customerNote;
+    }
+
+    message += "\n\nPlease confirm my order.";
+
+    // WhatsApp number
+    const whatsappNumber = "918220624419";
+
+    // Create WhatsApp link
+    const whatsappURL =
+        "https://wa.me/" +
+        whatsappNumber +
+        "?text=" +
+        encodeURIComponent(message);
+
+    // Open WhatsApp
+    window.open(whatsappURL, "_blank");
 }
 
+// Scroll to products
 function scrollToProducts() {
     document.getElementById("products-heading").scrollIntoView({
         behavior: "smooth"
     });
 }
 
+// Scroll to cart
 function scrollToCart() {
     document.getElementById("cart-section").scrollIntoView({
         behavior: "smooth"
     });
 }
 
+// Load website
 displayCategories();
 displayProducts();
 displayCart();
+
 </script>
 
 </body>
